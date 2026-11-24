@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="tl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101827"><meta name="description" content="Simple motorcycle fuel monitor">
+<link rel="manifest" href="manifest.json"><title>Fuel Monitor</title>
+<style>
+:root{--bg:#080b10;--panel:#111722;--panel2:#182232;--text:#f4f7fb;--muted:#9aa8ba;--blue:#4d9cff;--line:#263244;--red:#ff6675}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,-apple-system,Segoe UI,sans-serif;padding:env(safe-area-inset-top) 12px calc(20px + env(safe-area-inset-bottom))}
+.wrap{max-width:600px;margin:auto}.top{padding:16px 3px 8px}.eyebrow{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:1px}.top h1{margin:3px 0;font-size:23px}.muted{color:var(--muted)}
+.hero{background:#111722;border:1px solid var(--line);border-radius:12px;padding:15px;margin:8px 0 10px}.hero small{color:var(--muted);font-weight:700}.mileage{font-size:clamp(38px,11vw,52px);font-weight:850;letter-spacing:-1.5px;line-height:1.15;margin:7px 0}.hero .sub{color:var(--muted);font-size:12px}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:10px 0}.stat,.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}.stat .k{font-size:11px;color:var(--muted)}.stat .v{font-size:20px;font-weight:800;margin-top:4px}.green{color:var(--blue)}.yellow{color:var(--text)}
+.tabs{display:flex;gap:6px;margin:14px 0 10px}.tab{flex:1;border:1px solid var(--line);background:var(--panel);color:var(--muted);padding:10px 7px;border-radius:9px;font-weight:750;font-size:13px}.tab.active{background:var(--blue);color:#07111e;border-color:var(--blue)}
+h2{font-size:16px;margin:1px 0 11px}.panel{margin:10px 0}.field{margin:10px 0}.field label{display:block;color:#c3ccda;font-size:12px;font-weight:650;margin-bottom:5px}.field input,.field select{width:100%;background:#080d15;border:1px solid #2b394d;color:var(--text);padding:11px;border-radius:8px;font:inherit;outline:none}.field input:focus,.field select:focus{border-color:var(--blue)}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btn{border:0;border-radius:9px;padding:12px 14px;font:inherit;font-weight:800;background:var(--blue);color:#07111e;width:100%;margin-top:7px}.btn.secondary{background:#202c3d;color:var(--text);border:1px solid var(--line)}.note{font-size:11px;color:var(--muted);line-height:1.45;margin-top:8px}.hidden{display:none!important}
+.record{padding:11px 0;border-top:1px solid var(--line)}.record:first-child{border-top:0}.recordhead{display:flex;justify-content:space-between;gap:8px}.record strong{font-size:15px}.record .meta{color:var(--muted);font-size:11px;margin-top:3px}.record .numbers{display:flex;flex-wrap:wrap;gap:10px;margin-top:7px;font-size:12px}.del{background:#2b1b24;color:#ff8996;border:1px solid #59303b;border-radius:7px;padding:6px 9px;font-weight:750}
+.empty{text-align:center;color:var(--muted);padding:20px 8px}.footer{text-align:center;color:#667386;font-size:10px;padding:16px 0}
+</style></head>
+<body><main class="wrap">
+<header class="top"><div class="eyebrow">FUEL TRACKER</div><h1>Fuel Monitor</h1><div class="muted">Fuel consumption and expense</div></header>
+<section class="hero"><small>CURRENT ODOMETER / MILEAGE</small><div class="mileage" id="heroMileage">0 <span style="font-size:20px;letter-spacing:0">km</span></div><div class="sub" id="vehicleLine">I-set ang starting mileage sa Settings</div></section>
+<button class="btn secondary" id="toggleMileage" type="button">UPDATE MILEAGE ＋</button>
+<section id="mileagePanel" class="panel hidden">
+<h2>Update mileage only</h2>
+<div class="field"><label>New current mileage (km)</label><input id="newMileage" type="number" min="0" step="0.1" placeholder="Hal. 3350"></div>
+<button class="btn" id="saveMileage" type="button">SAVE MILEAGE</button>
+<div class="note">Mileage lang ang maa-update dito. Walang fuel record o gastos na idaragdag.</div>
+</section>
+<section class="stats">
+ <div class="stat"><div class="k">Average consumption</div><div class="v green" id="avgKmL">—</div><div class="k">km per liter</div></div>
+ <div class="stat"><div class="k">Fuel cost per km</div><div class="v yellow" id="costKm">—</div><div class="k">PHP / km</div></div>
+ <div class="stat"><div class="k">Total fuel expenses</div><div class="v" id="totalCost">₱0.00</div></div>
+ <div class="stat"><div class="k">Total liters</div><div class="v" id="totalLiters">0.00 L</div></div>
+</section>
+<div class="tabs"><button class="tab active" data-tab="fuel">＋ Add Fuel</button><button class="tab" data-tab="history">History</button><button class="tab" data-tab="settings">Settings</button></div>
+<section id="fuel" class="panel">
+<h2>Fuel-up record</h2>
+<div class="field"><label>Gas type</label><select id="gasType"><option>Unleaded</option><option>Premium</option><option>Regular</option><option>Diesel</option><option>Other</option></select></div>
+<div class="grid2"><div class="field"><label>Actual liters na naisalin</label><input id="liters" type="number" min="0.01" step="0.01" placeholder="Hal. 3.50"></div><div class="field"><label>Actual na binayaran (₱)</label><input id="amount" type="number" min="0.01" step="0.01" placeholder="Hal. 220.00"></div></div>
+<div class="note" id="derivedPrice">Price per liter: —</div>
+<button class="btn" id="saveFuel">SAVE FUEL RECORD</button>
+<div class="note">Automatic na mase-save ang current mileage snapshot, gas type, actual liters at actual na binayaran. Para mas accurate ang km/L, mag-record tuwing full tank at panatilihing full-to-full ang pagsukat.</div>
+</section>
+<section id="history" class="panel hidden"><h2>Fuel history</h2><div id="historyList" class="empty">Wala pang fuel record.</div></section>
+<section id="settings" class="panel hidden"><h2>Settings</h2>
+<div class="field"><label>Current mileage (km)</label><input id="settingMileage" type="number" min="0" step="0.1" placeholder="Hal. 3200"></div>
+<div class="field"><label>Tank capacity (liters)</label><input id="tank" type="number" min="0" step="0.1" placeholder="Hal. 5.5"></div>
+<div class="field"><label>Motorcycle name (optional)</label><input id="vehicle" maxlength="40" placeholder="Hal. Honda Click 160"></div>
+<button class="btn" id="saveSettings">SAVE SETTINGS</button>
+<div class="note">Ang Current mileage dito ang starting/current reading. Gamitin ang Update Mileage para i-update ang odometer kahit walang fuel purchase.</div>
+</section>
+<div class="footer">Your records are saved on this device. Export/backup your browser data regularly.</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>'₱'+Number(n||0).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
+let data=JSON.parse(localStorage.getItem('fuelMonitorV1')||'null')||{currentMileage:2000,baseMileage:2000,tank:5.5,vehicle:'',records:[]};
+function save(){localStorage.setItem('fuelMonitorV1',JSON.stringify(data));render()}
+function num(id){return Number($(id).value)}
+function render(){
+ $('heroMileage').innerHTML=`${Number(data.currentMileage||0).toLocaleString('en-PH')} <span style="font-size:20px;letter-spacing:0">km</span>`;
+ $('vehicleLine').textContent=(data.vehicle?data.vehicle+' · ':'')+(data.tank?`Tank capacity: ${data.tank} L`:'Set tank capacity in Settings');
+ const r=data.records;let liters=r.reduce((s,x)=>s+x.liters,0),cost=r.reduce((s,x)=>s+x.amount,0);
+ let dist=0,used=0;
+ // Each fill-up interval uses the liters recorded at the later mileage.
+ for(let i=1;i<r.length;i++){let d=r[i].mileage-r[i-1].mileage;if(d>0){dist+=d;used+=r[i].liters}}
+ $('avgKmL').textContent=used>0?(dist/used).toFixed(1)+' km/L':'—';
+ $('costKm').textContent=dist>0?fmt(intervalCost/dist):'—';
+ $('totalCost').textContent=fmt(cost);$('totalLiters').textContent=liters.toFixed(2)+' L';
+ $('settingMileage').value=data.currentMileage??'';$('tank').value=data.tank??'';$('vehicle').value=data.vehicle||'';
+ renderHistory();
+}
+function renderHistory(){
+ const list=$('historyList');if(!data.records.length){list.className='empty';list.textContent='Wala pang fuel record.';return}
+ list.className='';
+ list.innerHTML=[...data.records].reverse().map(x=>`<div class="record"><div class="recordhead"><div><strong>${x.mileage.toLocaleString('en-PH')} km</strong><div class="meta">${new Date(x.date).toLocaleString('en-PH')} · ${esc(x.type)}</div></div><button class="del" data-del="${x.id}">Delete</button></div><div class="numbers"><span>${x.liters.toFixed(2)} L</span><span>${fmt(x.price)}/L</span><b>${fmt(x.amount)}</b>${x.distance>0?`<span>${x.distance.toFixed(1)} km interval</span>`:''}</div></div>`).join('');
+ list.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{if(confirm('I-delete ang fuel record na ito? Hindi mabubura ang ibang records.')){data.records=data.records.filter(x=>x.id!==b.dataset.del);data.currentMileage=data.records.length?data.records[data.records.length-1].mileage:(data.baseMileage??data.currentMileage);save()}}));
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function updateAmount(){let l=num('liters'),a=num('amount');$('derivedPrice').textContent='Price per liter: '+(l>0&&a>0?fmt(a/l)+'/L':'—')}
+$('liters').addEventListener('input',updateAmount);$('amount').addEventListener('input',updateAmount);
+$('saveFuel').addEventListener('click',()=>{
+ let mileage=Number(data.currentMileage),liters=num('liters'),amount=num('amount');
+ if(liters<=0||amount<=0){alert('Ilagay ang actual liters at actual na binayaran.');return}
+ let price=amount/liters;
+ let prev=data.records.length?data.records[data.records.length-1].mileage:(data.baseMileage??data.currentMileage);
+ data.records.push({id:String(Date.now())+Math.random(),date:new Date().toISOString(),mileage, type:$('gasType').value,liters,price,amount,distance:Math.max(0,mileage-prev)});
+ save();$('liters').value='';$('amount').value='';updateAmount();alert('Na-save ang fuel record!');
+});
+$('toggleMileage').addEventListener('click',()=>{let panel=$('mileagePanel');panel.classList.toggle('hidden');$('toggleMileage').textContent=panel.classList.contains('hidden')?'UPDATE MILEAGE ＋':'CLOSE MILEAGE UPDATE';$('newMileage').value=data.currentMileage});
+$('saveMileage').addEventListener('click',()=>{let m=num('newMileage');if(!Number.isFinite(m)||m<data.currentMileage){alert('Dapat mas mataas o kapareho ng current mileage ('+data.currentMileage+' km).');return}data.currentMileage=m;save();$('mileagePanel').classList.add('hidden');$('toggleMileage').textContent='UPDATE MILEAGE ＋';alert('Current mileage updated! Walang fuel record na ginawa.')});
+$('saveSettings').addEventListener('click',()=>{let m=num('settingMileage'),t=num('tank');if(m<0||t<0){alert('Hindi puwedeng negative ang values.');return}if(data.records.length&&m<Math.max(...data.records.map(x=>x.mileage))){alert('Hindi puwedeng mas mababa sa mileage ng latest fuel record.');return}data.currentMileage=m;if(!data.records.length)data.baseMileage=m;data.tank=t;data.vehicle=$('vehicle').value.trim();save();alert('Settings saved!')});
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===b));['fuel','history','settings'].forEach(id=>$(id).classList.toggle('hidden',id!==b.dataset.tab))}));
+render();
+if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+</script></body></html>
